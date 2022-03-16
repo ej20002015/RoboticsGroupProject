@@ -49,7 +49,6 @@ class Robot:
 		# Spin a full 360 degrees, detecting contours
 		# to determine the color of the circle next to
 		# room 1 entrance
-
 		prominentColor = self.spinAndGetProminentColor()
 
 		print(prominentColor)
