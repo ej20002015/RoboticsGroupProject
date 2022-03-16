@@ -4,21 +4,30 @@ import numpy as np
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import actionlib
 from actionlib_msgs.msg import *
-from geometry_msgs.msg import Pose, Point, Quaternion
+from geometry_msgs.msg import Pose, Point, Quaternion, Twist
+import math
 
 class Navigation:
 
 	waitTime = 60
+	rotationSteps = 80
 
 	'''
 	Set up publisher and subscribers for navigation module
 	'''
-	def __init__(self):
+	def __init__(self, updateRate, rate):
+
+		self.updateRate = updateRate
+		self.rate = rate
 
 		self.goalGiven = False
 
+		self.rotationAmount = 0.0
+
 		self.movementBase = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 		self.movementBase.wait_for_server()
+
+		self.velocityPublisher = rospy.Publisher('mobile_base/commands/velocity', Twist)
 
 	''' 
 	Command robot to navigate to point (x,y) in world
@@ -51,7 +60,29 @@ class Navigation:
 			raise FailedNavigationException('failed to reach the navigation goal')
 
 	'''
-	Run on shutdown
+	Rotates robot 360 degrees at it's current position, returns true
+	when still rotating and	false when rotation is stopped
+	'''
+	def rotateInPlace(self):
+
+		offset = (2 * math.pi) / 10
+		rotationStep = (2 * math.pi) / float(Navigation.rotationSteps)
+		rotationVelocity = rotationStep * self.updateRate
+		
+		if (self.rotationAmount < (2 * math.pi) + offset):
+			self.rotationAmount += rotationStep
+
+			velocity = Twist()
+			velocity.angular.z = rotationVelocity
+			self.publishVelocityForTick(velocity)
+			return True
+
+		self.rotationAmount = 0.0
+		self.publishVelocityForTick(Twist())
+		return False
+
+	'''
+	Run when the node is shutdown
 	'''	
 	def onShutdown(self):
 
@@ -64,6 +95,14 @@ class Navigation:
 	def getQuarternion(self, theta):
 
 		return 0, 0, np.sin(theta/2.0), np.cos(theta/2.0)
+
+	'''
+	Publish velocity for the duration of a tick (1 / self.updateRate)
+	'''
+	def publishVelocityForTick(self, velocity):
+
+		self.velocityPublisher.publish(velocity)
+		self.rate.sleep()
 
 class FailedNavigationException(Exception):
 
