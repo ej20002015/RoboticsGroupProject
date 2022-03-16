@@ -7,6 +7,11 @@ from actionlib_msgs.msg import *
 from geometry_msgs.msg import Pose, Point, Quaternion, Twist
 import math
 
+
+class FailedNavigationException(Exception):
+
+	pass
+
 class Navigation:
 
 	waitTime = 60
@@ -57,7 +62,7 @@ class Navigation:
 			return
 		else:
 			self.movementBase.cancel_goal()
-			raise FailedNavigationException('failed to reach the navigation goal')
+			raise FailedNavigationException('Failed to reach the navigation goal')
 
 	'''
 	Rotates robot 360 degrees at it's current position, returns true
@@ -103,12 +108,6 @@ class Navigation:
 
 		self.velocityPublisher.publish(velocity)
 		self.rate.sleep()
-
-class FailedNavigationException(Exception):
-
-	def __init__(self, message):
-
-		super().__init__(message)
 
 		
 
