@@ -13,7 +13,7 @@ Do not make changes directly on the main branch. Before making changes please do
 
 ## Running the Robot
 In order to run the robot and identify the correct characters, carry out the following:
-- Activate the ROS image using ```singularity shell [--nv] <IMAGE_PATH>```
+- Activate the ROS image using ```singularity shell [--nv] /vol/scratch/SoC/COMP3631/ros.simg```
 - Navigate into the catkin workspace and run ```source devel/setup.bash```
 - Set the active world file using ```export TURTLEBOT_GAZEBO_WORLD_FILE=<ABSOLUTE_PATH_TO_REPO>/group_project/world/project.world```
 - Start Gazebo using ```roslaunch turtlebot_gazebo turtlebot_world.launch```
