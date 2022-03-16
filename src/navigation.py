@@ -60,7 +60,8 @@ class Navigation:
 			raise FailedNavigationException('failed to reach the navigation goal')
 
 	'''
-	Rotates robot 360 degrees at it's current position, returns false when rotation is stopped
+	Rotates robot 360 degrees at it's current position, returns true
+	when still rotating and	false when rotation is stopped
 	'''
 	def rotateInPlace(self):
 
