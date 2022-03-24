@@ -13,11 +13,11 @@ Do not make changes directly on the main branch. Before making changes please do
 
 ## Running the Robot
 In order to run the robot and identify the correct characters, carry out the following:
-- Activate the ROS image using ```singularity shell [--nv] /vol/scratch/SoC/COMP3631/ros.simg```
+- Activate the ROS image using ```singularity shell --nv /vol/scratch/SoC/COMP3631/ros.simg```
 - Navigate into the catkin workspace and run ```source devel/setup.bash```
-- Set the active world file using ```export TURTLEBOT_GAZEBO_WORLD_FILE=<ABSOLUTE_PATH_TO_REPO>/group_project/world/project.world```
+- Set the active world file using ```export TURTLEBOT_GAZEBO_WORLD_FILE=<ABSOLUTE_PATH_TO_REPO>/world/project.world```
 - Start Gazebo using ```roslaunch turtlebot_gazebo turtlebot_world.launch```
-- In another terminal, navigate to ```group_project/launch``` and run ```roslaunch simulated_localisation.launch map_file:=<ABSOLUTE_PATH_TO_REPO>/group_project/world/map/project_map.yaml``` to setup the localisation module and load the correct map file
-- In another terminal, navigate to ```group_project/``` and run ```roslaunch turtlebot_rviz_launchers view_navigation.launch``` to launch RVIZ
-- Navigate to ```<ABSOLUTE_PATH_TO_REPO>/group_project``` and run ```chmod +x src/main.py```
+- In another terminal, navigate to ```<ABSOLUTE_PATH_TO_REPO>/launch``` and run ```roslaunch simulated_localisation.launch map_file:=<ABSOLUTE_PATH_TO_REPO>/world/map/project_map.yaml``` to setup the localisation module and load the correct map file
+- In another terminal, navigate to ```<ABSOLUTE_PATH_TO_REPO>``` and run ```roslaunch turtlebot_rviz_launchers view_navigation.launch``` to launch RVIZ
+- Navigate to ```<ABSOLUTE_PATH_TO_REPO>``` and run ```chmod +x src/main.py```
 - Finally, run your code as usual using ```rosrun group_project main.py```
