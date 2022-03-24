@@ -16,7 +16,11 @@ class Vision:
         self.displayKP = kwargs.get('kp', False)
         self.displayMasks = kwargs.get('masks', False)
 
-        self.colors = {} # colors we want to detect
+        # colors we want to detect
+        self.colors = {}
+        # Filepaths and identifiers of the images containing the objects we want to detect
+        self.objectKeypoints = {}
+
         self.detector = cv2.ORB()
         self.matcher = cv2.BFMatcher()
 
@@ -43,7 +47,7 @@ class Vision:
 
         if self.displayKP:
             keypoints = self.detector.detect(self.rgbImage)
-            keypoints_img = cv2.drawKeypoints(self.rgbImage, keypoints, outImage=None, color=(0, 255, 0), flags=cv2.DRAW_MATCHES_FLAGS_DRAW_OVER_OUTIMG)
+            keypoints_img = cv2.drawKeypoints(self.rgbImage, keypoints, None, color=(0, 255, 0), flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT)
             cv2.imshow('kp', keypoints_img)
             cv2.waitKey(3)
 
@@ -51,6 +55,18 @@ class Vision:
 
         self.colors = colorRanges
         self.initializeWindows()
+
+    def setObjectRecognitionImagePaths(self, objectRecognitionImagePaths):
+
+        self.objectKeypoints.clear()
+        for identifier, path in objectRecognitionImagePaths.items():
+            img = cv2.imread(path)
+            kp = self.detector.detect(img)
+            kp, des = self.detector.compute(img, kp)
+            self.objectKeypoints[identifier] = {
+                "kp": kp,
+                "des": des
+            }
 
     def detectColors(self):
 
@@ -63,7 +79,7 @@ class Vision:
             mask = cv2.inRange(hsvImage, bounds['lowerBound'], bounds['upperBound'])
             maskDisplay = cv2.bitwise_and(self.rgbImage, self.rgbImage, mask=mask)
 
-            if self.display:
+            if self.displayRGB:
                 cv2.imshow('rgbMask-' + color, maskDisplay)
                 cv2.waitKey(3)
 
@@ -78,11 +94,21 @@ class Vision:
             else:
 
                 detected[color]['detected'] = False
-                detected[color]['contourArea'] = 0.0
+                detected[color]['contourArea'] Characters= 0.0
         
         return detected
     
-    def detectCharacters(self):
+    def detectObjects(self):
+
+        if self.rgbImage is not None:
+
+            videoFeedKeypoints = self.detector(self.rgbImage)
+            videoFeedKeypoints, videoFeedDescriptors = self.detector.compute(self.rgbImage, videoFeedKeypoints)
+
+            results = {key: 0 for key in self.objectKeypoints.keys()}
+
+            for  in self.objectKeypoints
+
 
         pass
 

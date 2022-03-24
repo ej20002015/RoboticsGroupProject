@@ -28,6 +28,13 @@ class Robot:
 		}
 	}
 
+	objectRecognitionImagePaths = {
+		"mustard": "cluedo_images/mustard.png",
+		"peacock": "cluedo_images/peacock.png",
+		"plum":    "cluedo_images/plum.png",
+		"scarlet": "cluedo_images/scarlet.png"
+	}
+
 	def __init__(self):
 
 		self.rate = rospy.Rate(Robot.updateRate)
@@ -41,8 +48,9 @@ class Robot:
 			"redRoom": "NONE"
 		}
 
-		self.vision = Vision(True)
+		self.vision = Vision(rgb=True, kp=True)
 		self.vision.setColorRanges(Robot.colorRanges)
+		self.vision.setObjectRecognitionImagePaths(Robot.objectRecognitionImagePaths)
 
 		rospy.on_shutdown(self.onShutdown)
 
@@ -69,6 +77,11 @@ class Robot:
 
 		# Move into the green room
 		self.navigation.navigateToPoint(self.points[self.roomMapping["greenRoom"]]["centre"], 0)
+
+		# Spin a full 360 degrees, detecting character
+		# keypoints to determine if we see a character, and
+		# if so, their identity
+		self.spinAnd
 	
 	'''
 	Run when the node is shutdown
