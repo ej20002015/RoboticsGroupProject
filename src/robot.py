@@ -30,9 +30,9 @@ class Robot:
 
 	objectRecognitionImagePaths = {
 		"mustard": "cluedo_images/mustard.png",
-		"peacock": "cluedo_images/peacock.png",
-		"plum":    "cluedo_images/plum.png",
-		"scarlet": "cluedo_images/scarlet.png"
+		# "peacock": "cluedo_images/peacock.png",
+		# "plum":    "cluedo_images/plum.png",
+		#"scarlet": "cluedo_images/scarlet.png"
 	}
 
 	def __init__(self):
@@ -41,7 +41,7 @@ class Robot:
 
 		self.navigation = Navigation(Robot.updateRate, self.rate)
 
-		self.points = FileHandler.readPointsFile(Robot.filepath)
+		self.points = FileHandler.readPointsFile(Robot.filepath) 
 
 		self.roomMapping = {
 			"greenRoom": "NONE", 
@@ -81,8 +81,20 @@ class Robot:
 		# Spin a full 360 degrees, detecting character
 		# keypoints to determine if we see a character, and
 		# if so, their identity
-		self.spinAnd
-	
+
+		minimums = None
+
+		while self.navigation.rotateInPlace():
+			
+			results = self.vision.detectPresenceOfObjects()
+			# if minimums is None : minimums = results
+			# else:
+			# 	for key in results.keys():
+			# 		if results[key] <= minimums[key]: 
+			# 			minimums[key] = results[key]
+
+			print(results)
+
 	'''
 	Run when the node is shutdown
 	'''
