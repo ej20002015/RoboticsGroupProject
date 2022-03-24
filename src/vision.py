@@ -2,6 +2,7 @@
 import rospy
 import cv2
 import numpy as np
+import os
 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
@@ -9,34 +10,47 @@ from cv_bridge import CvBridge, CvBridgeError
 
 class Vision:
 
-    def __init__(self, display=False):
+    def __init__(self, **kwargs):
+
+        self.displayRGB = kwargs.get('rgb', False)
+        self.displayKP = kwargs.get('kp', False)
+        self.displayMasks = kwargs.get('masks', False)
 
         self.colors = {} # colors we want to detect
-        self.rgbImage = None
+        self.detector = cv2.ORB()
+        self.matcher = cv2.BFMatcher()
 
-        self.display = display
-        cv2.namedWindow('rgbImage')
+        self.rgbImage = None
+        self.initializeWindows()
 
         self.bridge = CvBridge()
         self.subscriber = rospy.Subscriber('camera/rgb/image_raw', Image, self.update)
+
+    def initializeWindows(self):
+
+        cv2.destroyAllWindows()
+        cv2.namedWindow('rgb')
+        cv2.namedWindow('kp')
+        for color in self.colors.keys() : cv2.namedWindow('rgbMask-' + color)
 
     def update(self, image):
 
         self.rgbImage = self.bridge.imgmsg_to_cv2(image, 'bgr8')
 
-        if self.display:
-            cv2.imshow('rgbImage', self.rgbImage)
+        if self.displayRGB:
+            cv2.imshow('rgb', self.rgbImage)
+            cv2.waitKey(3)
+
+        if self.displayKP:
+            keypoints = self.detector.detect(self.rgbImage)
+            keypoints_img = cv2.drawKeypoints(self.rgbImage, keypoints, outImage=None, color=(0, 255, 0), flags=cv2.DRAW_MATCHES_FLAGS_DRAW_OVER_OUTIMG)
+            cv2.imshow('kp', keypoints_img)
             cv2.waitKey(3)
 
     def setColorRanges(self, colorRanges):
 
         self.colors = colorRanges
-
-        cv2.destroyAllWindows()
-
-        cv2.namedWindow('rgbImage')
-        for color in self.colors.keys():
-            cv2.namedWindow('rgbMask-' + color)
+        self.initializeWindows()
 
     def detectColors(self):
 
@@ -68,6 +82,10 @@ class Vision:
         
         return detected
     
+    def detectCharacters(self):
+
+        pass
+
     def onShutdown(self):
 
         cv2.destroyAllWindows()
