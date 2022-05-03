@@ -10,6 +10,10 @@ from cv_bridge import CvBridge, CvBridgeError
 
 class Vision:
 
+    wallMaskSensitivity = 50
+    wallMaskLowerBound = np.array([0, wallMaskSensitivity, 0])
+    wallMaskUpperBound = np.array([255, 255, 255 - wallMaskSensitivity])
+
     def __init__(self, **kwargs):
 
         self.displayRGB = kwargs.get('rgb', False)
@@ -18,11 +22,12 @@ class Vision:
 
         # colors we want to detect
         self.colors = {}
-        # Filepaths and identifiers of the images containing the objects we want to detect
-        self.objectKeypoints = {}
 
-        self.detector = cv2.ORB()
-        self.matcher = cv2.BFMatcher()
+        # Filepaths and identifiers of the images containing the objects we want to detect
+        self.objects = {}
+
+        # Object indentifiers mapped to upper and lower HSV mask bounds
+        self.objectDetectionData = {}
 
         self.rgbImage = None
         self.initializeWindows()
@@ -34,8 +39,9 @@ class Vision:
 
         cv2.destroyAllWindows()
         cv2.namedWindow('rgb')
-        cv2.namedWindow('kp')
-        for color in self.colors.keys() : cv2.namedWindow('rgbMask-' + color)
+
+        if self.displayMasks:
+            for color in self.colors.keys() : cv2.namedWindow('rgbMask-' + color)
 
     def update(self, image):
 
@@ -45,12 +51,6 @@ class Vision:
             cv2.imshow('rgb', self.rgbImage)
             cv2.waitKey(3)
 
-        if self.displayKP:
-            keypoints = self.detector.detect(self.rgbImage)
-            keypoints_img = cv2.drawKeypoints(self.rgbImage, keypoints, None, color=(0, 255, 0), flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT)
-            cv2.imshow('kp', keypoints_img)
-            cv2.waitKey(3)
-
     def setColorRanges(self, colorRanges):
 
         self.colors = colorRanges
@@ -58,14 +58,13 @@ class Vision:
 
     def setObjectRecognitionImagePaths(self, objectRecognitionImagePaths):
 
-        self.objectKeypoints.clear()
-        for identifier, path in objectRecognitionImagePaths.items():
-            img = cv2.imread(path)
-            kp = self.detector.detect(img)
-            kp, des = self.detector.compute(img, kp)
-            self.objectKeypoints[identifier] = {
-                "kp": kp,
-                "des": des
+        self.objects = objectRecognitionImagePaths
+        self.objectDetectionData.clear()
+        for identifier, details in objectRecognitionImagePaths.items():
+            img = cv2.imread(details["filepath"])
+
+            self.objectDetectionData[identifier] = {
+                "mask": (details["lowerBound"], details["upperBound"])
             }
 
     def detectColors(self):
@@ -79,7 +78,7 @@ class Vision:
             mask = cv2.inRange(hsvImage, bounds['lowerBound'], bounds['upperBound'])
             maskDisplay = cv2.bitwise_and(self.rgbImage, self.rgbImage, mask=mask)
 
-            if self.displayRGB:
+            if self.displayMasks:
                 cv2.imshow('rgbMask-' + color, maskDisplay)
                 cv2.waitKey(3)
 
@@ -94,23 +93,31 @@ class Vision:
             else:
 
                 detected[color]['detected'] = False
-                detected[color]['contourArea'] Characters= 0.0
+                detected[color]['contourArea'] = 0.0
         
         return detected
     
-    def detectObjects(self):
+    def detectPresenceOfObjects(self):
 
-        if self.rgbImage is not None:
+        hsvImage = cv2.cvtColor(self.rgbImage, cv2.COLOR_BGR2HSV)
+        hsvWallMask = cv2.inRange(hsvImage, Vision.wallMaskLowerBound, Vision.wallMaskUpperBound)
+        wallMaskedImage = cv2.bitwise_and(self.rgbImage, self.rgbImage, mask=hsvWallMask)
+        hsvWallMaskedImage = cv2.cvtColor(wallMaskedImage, cv2.COLOR_BGR2HSV)
 
-            videoFeedKeypoints = self.detector(self.rgbImage)
-            videoFeedKeypoints, videoFeedDescriptors = self.detector.compute(self.rgbImage, videoFeedKeypoints)
+        detected = {obj:{'detected': False, 'contourArea': 0.0} for obj in self.objectDetectionData}
 
-            results = {key: 0 for key in self.objectKeypoints.keys()}
+        for identifier, details in self.objectDetectionData.items():
 
-            for  in self.objectKeypoints
+            objectMask = cv2.inRange(hsvWallMaskedImage, details['mask'][0], details['mask'][1])
 
-
-        pass
+            contours = cv2.findContours(objectMask, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)[0]
+            if len(contours) > 0:
+                maxContour = max(contours, key=cv2.contourArea)
+                if cv2.contourArea(maxContour) > 20:
+                    detected[identifier]["detected"] = True
+                    detected[identifier]["contourArea"] = cv2.contourArea(maxContour)
+        
+        return detected
 
     def onShutdown(self):
 

@@ -29,10 +29,26 @@ class Robot:
 	}
 
 	objectRecognitionImagePaths = {
-		"mustard": "cluedo_images/mustard.png",
-		"peacock": "cluedo_images/peacock.png",
-		"plum":    "cluedo_images/plum.png",
-		"scarlet": "cluedo_images/scarlet.png"
+		"mustard": {
+			"filepath": "cluedo_images/mustard.png",
+			"lowerBound": np.array([20, 90, 170]),
+			"upperBound": np.array([45, 150, 230])
+		},
+		"peacock": {
+			"filepath": "cluedo_images/peacock.png",
+			"lowerBound": np.array([100, 110, 150]),
+			"upperBound": np.array([110, 150, 210])
+		},
+		"plum": {
+			"filepath": "cluedo_images/plum.png",
+			"lowerBound": np.array([150, 80, 40]),
+			"upperBound": np.array([190, 150, 160])
+		},
+		"scarlet": {
+			"filepath": "cluedo_images/scarlet.png",
+			"lowerBound": np.array([-5, 160, 120]),
+			"upperBound": np.array([5, 200, 200])
+		}
 	}
 
 	def __init__(self):
@@ -41,7 +57,7 @@ class Robot:
 
 		self.navigation = Navigation(Robot.updateRate, self.rate)
 
-		self.points = FileHandler.readPointsFile(Robot.filepath)
+		self.points = FileHandler.readPointsFile(Robot.filepath) 
 
 		self.roomMapping = {
 			"greenRoom": "NONE", 
@@ -81,8 +97,15 @@ class Robot:
 		# Spin a full 360 degrees, detecting character
 		# keypoints to determine if we see a character, and
 		# if so, their identity
-		self.spinAnd
-	
+
+
+		# TODO: TEMP
+		
+		while self.navigation.rotateInPlace():
+			
+			results = self.vision.detectPresenceOfObjects()
+			print(results)
+
 	'''
 	Run when the node is shutdown
 	'''
