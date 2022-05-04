@@ -104,7 +104,7 @@ class Vision:
         wallMaskedImage = cv2.bitwise_and(self.rgbImage, self.rgbImage, mask=hsvWallMask)
         hsvWallMaskedImage = cv2.cvtColor(wallMaskedImage, cv2.COLOR_BGR2HSV)
 
-        detected = {obj:{'detected': False, 'contourArea': 0.0} for obj in self.objectDetectionData}
+        detected = {obj:{'detected': False, 'contourArea': 0.0, "side": "NONE"} for obj in self.objectDetectionData}
 
         for identifier, details in self.objectDetectionData.items():
 
@@ -114,10 +114,20 @@ class Vision:
             if len(contours) > 0:
                 maxContour = max(contours, key=cv2.contourArea)
                 if cv2.contourArea(maxContour) > 20:
+
+                    moment = cv2.moments(maxContour)
+                    contourX = int(moment["m10"]/moment["m00"])
+                    centreX = self.rgbImage.shape[1] / 2
+
                     detected[identifier]["detected"] = True
                     detected[identifier]["contourArea"] = cv2.contourArea(maxContour)
+                    detected[identifier]["side"] = "LEFT" if contourX < centreX else "RIGHT"
         
         return detected
+    
+    def getScreenshot(self):
+
+        return self.rgbImage
 
     def onShutdown(self):
 

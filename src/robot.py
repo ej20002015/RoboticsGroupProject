@@ -5,6 +5,7 @@ import numpy as np
 from navigation import Navigation
 from vision import Vision
 from fileHandler import FileHandler
+import time
 
 class FailedToFindRoomIndicator(Exception):
 
@@ -13,8 +14,11 @@ class FailedToFindRoomIndicator(Exception):
 class Robot:
 
 	updateRate = 10
+	characterContourThreshold = {"min": 7500, "max": 12000}
 
 	filepath = 'world/input_points.yaml'
+	characterIdentifierFilepath = "output/cluedo_character.txt"
+	characterScreenshotFilepath = "output/cluedo_character.png"
 
 	sensitivity = 20
 	colorRanges = {
@@ -94,17 +98,13 @@ class Robot:
 		# Move into the green room
 		self.navigation.navigateToPoint(self.points[self.roomMapping["greenRoom"]]["centre"], 0)
 
-		# Spin a full 360 degrees, detecting character
-		# keypoints to determine if we see a character, and
-		# if so, their identity
-
-
-		# TODO: TEMP
+		obj = self.spinAndFindObject()
 		
-		while self.navigation.rotateInPlace():
-			
-			results = self.vision.detectPresenceOfObjects()
-			print(results)
+		if (obj["identifier"] != "NONE"):
+			self.centreAndPursueObject(obj)
+			image = self.vision.getScreenshot()
+			FileHandler.writeTextFile(Robot.characterIdentifierFilepath, obj["identifier"])
+			FileHandler.writeScreenshotFile(Robot.characterScreenshotFilepath, image)
 
 	'''
 	Run when the node is shutdown
@@ -141,3 +141,67 @@ class Robot:
 						largestContour["area"] = colors[color]["contourArea"]
 
 		return largestContour["color"]
+
+	'''
+	Rotate up to 360 degrees on the spot and return the 
+	first detected object
+	'''
+	def spinAndFindObject(self):
+
+		obj = {"identifier": "NONE", "area": 0.0, "side": "NONE"}
+
+		while self.navigation.rotateInPlace(speedScale = 0.5):
+			
+			objects = self.vision.detectPresenceOfObjects()
+
+			for identifier, details in objects.items():
+				if details["detected"]:
+					obj["identifier"] = identifier
+					obj["area"] = details["contourArea"]
+					obj["side"] = details["side"]
+					return obj
+		
+		return obj
+
+	'''
+	Centres the object in the centre of the robot's vision, and
+	navigates towards the object 
+	'''
+	def centreAndPursueObject(self, obj):
+
+		currentSide = obj["side"]
+
+		stepInterval = 40
+		movementSpeedScale = 0.2
+		rotationSpeedScale = 0.1
+
+		stepCounter = 0
+
+		while True:
+			
+			if (stepCounter % stepInterval == 0):
+				rotationDirection = "CLOCKWISE" if currentSide == "RIGHT" else "ANTI_CLOCKWISE"
+
+				while self.navigation.rotateInPlace(rotationDirection, rotationSpeedScale):
+
+					objects = self.vision.detectPresenceOfObjects()
+					if objects[obj["identifier"]]["side"] != currentSide and objects[obj["identifier"]]["side"] != "NONE":
+						currentSide = objects[obj["identifier"]]["side"]
+						break
+			
+			stepCounter += 1
+
+			objects = self.vision.detectPresenceOfObjects()
+			print(objects)
+			if objects[obj["identifier"]]["contourArea"] < Robot.characterContourThreshold["min"]:
+				# Move forward
+				self.navigation.moveStraight("FORWARD", movementSpeedScale)
+			elif objects[obj["identifier"]]["contourArea"] > Robot.characterContourThreshold["max"]:
+				# Move backward
+				self.navigation.moveStraight("BACKWARD", movementSpeedScale)
+			else:
+				self.navigation.stop()
+				break
+			
+
+
