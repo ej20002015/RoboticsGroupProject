@@ -99,15 +99,28 @@ class Robot:
 
 		# Move into the green room
 		self.navigation.navigateToPoint(self.points[self.roomMapping["greenRoom"]]["centre"], 0)
-
-		obj = self.spinAndFindObject()
 		
-		if (obj["identifier"] != "NONE"):
-			self.centreAndPursueObject(obj)
-			image = self.vision.getScreenshot()
-			FileHandler.writeTextFile(Robot.characterIdentifierFilepath, obj["identifier"])
-			FileHandler.writeScreenshotFile(Robot.characterScreenshotFilepath, image)
+		# Perform inital sping to try and detect objects
 
+		identifier = self.spinAndPursueObject()
+		if identifier != "NONE":
+			self.outputCharacterFiles(identifier)
+		
+		# Initial spin didn't find any objects, so move more
+
+		stepInterval = 80
+		stepCounter = 0
+
+		while True:
+			if self.navigation.moveForwardWithCollision(0.25):
+				self.navigation.rotateByAngle(30, "CLOCKWISE", 5)
+
+			if (stepCounter % stepInterval == 0):
+				identifier = self.spinAndPursueObject()
+				if identifier != "NONE":
+					self.outputCharacterFiles(identifier)
+
+			stepCounter += 1
 	'''
 	Run when the node is shutdown
 	'''
@@ -115,6 +128,12 @@ class Robot:
 
 		self.navigation.onShutdown()
 		self.vision.onShutdown()
+
+	def outputCharacterFiles(self, identifier):
+
+		image = self.vision.getScreenshot()
+		FileHandler.writeTextFile(Robot.characterIdentifierFilepath, identifier)
+		FileHandler.writeScreenshotFile(Robot.characterScreenshotFilepath, image)
 
 	'''
 	Move to the entrance of room1
@@ -144,6 +163,17 @@ class Robot:
 
 		return largestContour["color"]
 
+	def spinAndPursueObject(self):
+
+		# Attempt to identify the cluedo character by spinning 360 degrees in the center of the room
+		obj = self.spinAndFindObject()
+
+		if (obj["identifier"] != "NONE"):
+			self.centreAndPursueObject(obj)
+			return obj["identifier"]
+		
+		return "NONE"
+
 	'''
 	Rotate up to 360 degrees on the spot and return the 
 	first detected object
@@ -152,7 +182,7 @@ class Robot:
 
 		obj = {"identifier": "NONE", "area": 0.0, "side": "NONE"}
 
-		while self.navigation.rotateInPlace(speedScale = 0.5):
+		while self.navigation.rotateInPlace(speedScale = 0.8):
 			
 			objects = self.vision.detectPresenceOfObjects()
 
@@ -194,7 +224,6 @@ class Robot:
 			stepCounter += 1
 
 			objects = self.vision.detectPresenceOfObjects()
-			print(objects)
 			if objects[obj["identifier"]]["contourArea"] < Robot.characterContourThreshold["min"]:
 				# Move forward
 				self.navigation.moveStraight("FORWARD", movementSpeedScale)

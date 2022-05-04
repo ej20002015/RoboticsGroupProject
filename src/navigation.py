@@ -5,6 +5,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import actionlib
 from actionlib_msgs.msg import *
 from geometry_msgs.msg import Pose, Point, Quaternion, Twist
+from kobuki_msgs.msg import BumperEvent
 import math
 
 
@@ -33,6 +34,13 @@ class Navigation:
 		self.movementBase.wait_for_server()
 
 		self.velocityPublisher = rospy.Publisher('mobile_base/commands/velocity', Twist)
+		self.bumperSubscriber = rospy.Subscriber('mobile_base/events/bumper', BumperEvent, self.bumperEventCallback)
+
+		self.bumperEvent = None
+
+	def bumperEventCallback(self, data):
+
+		self.bumperEvent = data
 
 	''' 
 	Command robot to navigate to point (x,y) in world
@@ -71,7 +79,7 @@ class Navigation:
 	def rotateInPlace(self, direction = "ANTI_CLOCKWISE", speedScale = 1.0):
 
 		sign = 1 if direction == "ANTI_CLOCKWISE" else -1
-		offset = (2 * math.pi) / 10
+		offset = (2 * math.pi) / 20
 		rotationStep = (2 * math.pi) / (float(Navigation.rotationSteps) * (1.0 / speedScale))
 		rotationVelocity = sign * rotationStep * self.updateRate
 		
@@ -87,12 +95,53 @@ class Navigation:
 		self.stop()
 		return False
 
+	def rotateByAngle(self, angle, direction = "ANTI_CLOCKWISE", speedScale = 1.0):
+		
+		sign = 1 if direction == "ANTI_CLOCKWISE" else -1
+		targetAngle = (2 * math.pi) * (angle / 360.0)
+		offset = targetAngle / 20
+		rotationStep = targetAngle / (float(Navigation.rotationSteps) * (1.0 / speedScale))
+		rotationVelocity =  sign * rotationStep * self.updateRate
+		rotationAmount = 0.0
+		
+		while (abs(rotationAmount) < targetAngle + offset):
+			rotationAmount += sign * rotationStep
+
+			velocity = Twist()
+			velocity.angular.z = rotationVelocity
+			self.publishVelocityForTick(velocity)
+
 	def moveStraight(self, direction, speedScale = 1.0):
 
 		sign = 1 if direction == "FORWARD" else -1
 		velocity = Twist()
 		velocity.linear.x = 1 * speedScale * sign
 		self.publishVelocityForTick(velocity)
+
+	def moveForwardWithCollision(self, speedScale = 1.0):
+
+		reverseMovementIterations = 5
+		forwardVelocity = Twist()
+		forwardVelocity.linear.x = 1 * speedScale
+		self.publishVelocityForTick(forwardVelocity)
+
+		# Move back a certian distance if collision is detected
+
+		if self.bumperEvent is not None:
+
+			if self.bumperEvent.state == BumperEvent.PRESSED:
+
+				print(self.bumperEvent)
+
+				reverseVelocity = Twist()
+				reverseVelocity.linear.x = -1 * speedScale
+				for i in range(reverseMovementIterations):
+					print("Going back")
+					self.publishVelocityForTick(reverseVelocity)
+				return True
+		
+		return False
+
 
 	def stop(self):
 
