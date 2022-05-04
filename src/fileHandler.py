@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 import rospy
 import yaml
+import cv2
 
 class FileHandler:
 
     @staticmethod
     def writeTextFile(filePath, string):
-        pass
+        with open(filePath, "w") as file:
+            file.write(string)
 
     @staticmethod
-    def writeSnapshotFile(filePath, image):
-        pass
+    def writeScreenshotFile(filePath, image):
+        cv2.imwrite(filePath, image)
 
     @staticmethod
     def readPointsFile(filePath):

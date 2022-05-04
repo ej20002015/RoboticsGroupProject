@@ -68,14 +68,15 @@ class Navigation:
 	Rotates robot 360 degrees at it's current position, returns true
 	when still rotating and	false when rotation is stopped
 	'''
-	def rotateInPlace(self):
+	def rotateInPlace(self, direction = "ANTI_CLOCKWISE", speedScale = 1.0):
 
+		sign = 1 if direction == "ANTI_CLOCKWISE" else -1
 		offset = (2 * math.pi) / 10
-		rotationStep = (2 * math.pi) / float(Navigation.rotationSteps)
-		rotationVelocity = rotationStep * self.updateRate
+		rotationStep = (2 * math.pi) / (float(Navigation.rotationSteps) * (1.0 / speedScale))
+		rotationVelocity = sign * rotationStep * self.updateRate
 		
-		if (self.rotationAmount < (2 * math.pi) + offset):
-			self.rotationAmount += rotationStep
+		if (abs(self.rotationAmount) < (2 * math.pi) + offset):
+			self.rotationAmount += sign * rotationStep
 
 			velocity = Twist()
 			velocity.angular.z = rotationVelocity
@@ -83,8 +84,23 @@ class Navigation:
 			return True
 
 		self.rotationAmount = 0.0
-		self.publishVelocityForTick(Twist())
+		self.stop()
 		return False
+
+	def moveStraight(self, direction, speedScale = 1.0):
+
+		sign = 1 if direction == "FORWARD" else -1
+		velocity = Twist()
+		velocity.linear.x = 1 * speedScale * sign
+		self.publishVelocityForTick(velocity)
+
+	def stop(self):
+
+		self.publishVelocityForTick(Twist())
+
+	def getRotationAmount(self):
+		
+		return self.rotationAmount
 
 	'''
 	Run when the node is shutdown
