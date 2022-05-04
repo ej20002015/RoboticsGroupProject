@@ -15,7 +15,7 @@ class FailedToFindRoomIndicator(Exception):
 class Robot:
 
 	updateRate = 10
-	characterContourThreshold = {"min": 7500, "max": 12000}
+	characterContourThreshold = {"min": 6500, "max": 10000}
 
 	projectRoot = rospkg.RosPack().get_path("group_project")
 	filepath = projectRoot + "/world/input_points.yaml"
@@ -37,22 +37,22 @@ class Robot:
 	objectRecognitionImagePaths = {
 		"mustard": {
 			"filepath": "cluedo_images/mustard.png",
-			"lowerBound": np.array([20, 90, 170]),
+			"lowerBound": np.array([20, 90, 0]),
 			"upperBound": np.array([45, 150, 230])
 		},
 		"peacock": {
 			"filepath": "cluedo_images/peacock.png",
-			"lowerBound": np.array([100, 110, 150]),
+			"lowerBound": np.array([100, 110, 0]),
 			"upperBound": np.array([110, 150, 210])
 		},
 		"plum": {
 			"filepath": "cluedo_images/plum.png",
-			"lowerBound": np.array([150, 80, 40]),
-			"upperBound": np.array([190, 150, 160])
+			"lowerBound": np.array([150, 80, 0]),
+			"upperBound": np.array([190, 150, 200])
 		},
 		"scarlet": {
 			"filepath": "cluedo_images/scarlet.png",
-			"lowerBound": np.array([-5, 160, 120]),
+			"lowerBound": np.array([-5, 160, 0]),
 			"upperBound": np.array([5, 200, 200])
 		}
 	}
@@ -70,7 +70,7 @@ class Robot:
 			"redRoom": "NONE"
 		}
 
-		self.vision = Vision(rgb=True, kp=True)
+		self.vision = Vision(rgb=True, masks=True)
 		self.vision.setColorRanges(Robot.colorRanges)
 		self.vision.setObjectRecognitionImagePaths(Robot.objectRecognitionImagePaths)
 
@@ -105,22 +105,23 @@ class Robot:
 		identifier = self.spinAndPursueObject()
 		if identifier != "NONE":
 			self.outputCharacterFiles(identifier)
-		
-		# Initial spin didn't find any objects, so move more
+		else:
+			# Initial spin didn't find any objects, so move more
 
-		stepInterval = 80
-		stepCounter = 0
+			stepInterval = 80
+			stepCounter = 0
 
-		while True:
-			if self.navigation.moveForwardWithCollision(0.25):
-				self.navigation.rotateByAngle(30, "CLOCKWISE", 5)
+			while True:
+				if self.navigation.moveForwardWithCollision(0.25):
+					self.navigation.rotateByAngle(30, "CLOCKWISE", 5)
+				else:
+					stepCounter += 1
 
-			if (stepCounter % stepInterval == 0):
-				identifier = self.spinAndPursueObject()
-				if identifier != "NONE":
-					self.outputCharacterFiles(identifier)
+				if (stepCounter % stepInterval == 0):
+					identifier = self.spinAndPursueObject()
+					if identifier != "NONE":
+						self.outputCharacterFiles(identifier)
 
-			stepCounter += 1
 	'''
 	Run when the node is shutdown
 	'''

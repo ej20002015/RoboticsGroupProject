@@ -17,7 +17,6 @@ class Vision:
     def __init__(self, **kwargs):
 
         self.displayRGB = kwargs.get('rgb', False)
-        self.displayKP = kwargs.get('kp', False)
         self.displayMasks = kwargs.get('masks', False)
 
         # colors we want to detect
@@ -42,6 +41,8 @@ class Vision:
 
         if self.displayMasks:
             for color in self.colors.keys() : cv2.namedWindow('rgbMask-' + color)
+            cv2.namedWindow("wallMask")
+            cv2.namedWindow("objectMask")
 
     def update(self, image):
 
@@ -103,12 +104,17 @@ class Vision:
         hsvWallMask = cv2.inRange(hsvImage, Vision.wallMaskLowerBound, Vision.wallMaskUpperBound)
         wallMaskedImage = cv2.bitwise_and(self.rgbImage, self.rgbImage, mask=hsvWallMask)
         hsvWallMaskedImage = cv2.cvtColor(wallMaskedImage, cv2.COLOR_BGR2HSV)
+        if self.displayMasks:
+            cv2.imshow("wallMask", wallMaskedImage)
 
         detected = {obj:{'detected': False, 'contourArea': 0.0, "side": "NONE"} for obj in self.objectDetectionData}
 
         for identifier, details in self.objectDetectionData.items():
 
             objectMask = cv2.inRange(hsvWallMaskedImage, details['mask'][0], details['mask'][1])
+            if self.displayMasks:
+                objectMaskImage = cv2.bitwise_and(wallMaskedImage, wallMaskedImage, mask=objectMask)
+                cv2.imshow("objectMask", objectMaskImage)
 
             contours = cv2.findContours(objectMask, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_SIMPLE)[0]
             if len(contours) > 0:
