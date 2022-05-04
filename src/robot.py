@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import rospy
+import rospkg
 import numpy as np
 
 from navigation import Navigation
@@ -16,9 +17,10 @@ class Robot:
 	updateRate = 10
 	characterContourThreshold = {"min": 7500, "max": 12000}
 
-	filepath = 'world/input_points.yaml'
-	characterIdentifierFilepath = "output/cluedo_character.txt"
-	characterScreenshotFilepath = "output/cluedo_character.png"
+	projectRoot = rospkg.RosPack().get_path("group_project")
+	filepath = projectRoot + "/world/input_points.yaml"
+	characterIdentifierFilepath = projectRoot + "/output/cluedo_character.txt"
+	characterScreenshotFilepath = projectRoot + "/output/cluedo_character.png"
 
 	sensitivity = 20
 	colorRanges = {
@@ -171,7 +173,7 @@ class Robot:
 
 		currentSide = obj["side"]
 
-		stepInterval = 40
+		stepInterval = 20
 		movementSpeedScale = 0.2
 		rotationSpeedScale = 0.1
 
